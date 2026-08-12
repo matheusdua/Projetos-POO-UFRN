@@ -1,0 +1,35 @@
+# ========================
+# C++ / Code::Blocks
+# ========================
+bin/
+obj/
+*.layout
+*.depend
+*.exe
+*.dll
+*.so
+*.a
+*.o
+*.obj
+
+# ========================
+# Qt Creator
+# ========================
+build-*/
+*.user
+*.user.*
+Makefile*
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+object_script.*.Release
+object_script.*.Debug
+*_plugin_import.cpp
+
+# ========================
+# OS / Temporários
+# ========================
+.DS_Store
+Thumbs.db
+*~
+*.swp

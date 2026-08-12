@@ -1,0 +1,12 @@
+<svg width="900" height="630" xmlns="http://www.w3.org/2000/svg">
+
+<rect width="900" height="630" x="0" y="0"
+  stroke="rgb(0,156,59)" stroke-width="1" fill="rgb(0,156,59)" />
+
+<polygon points="77,315 450,77 822,315 450,552"
+  stroke="rgb(255,223,0)" stroke-width="1" fill="rgb(255,223,0)" />
+
+<circle r="158" cx="450" cy="315"
+  stroke="rgb(0,39,118)" stroke-width="1" fill="rgb(0,39,118)" />
+
+</svg>
