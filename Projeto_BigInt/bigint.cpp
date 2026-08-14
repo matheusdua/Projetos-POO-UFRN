@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cmath>
+#include <utility>
 #include "bigint.h"
 
 using namespace std;
@@ -93,7 +95,7 @@ BigInt &BigInt::operator=(BigInt &&Temp) noexcept
 /// NAO PODE SER MODIFICADO NAS PARTES JAH IMPLEMENTADAS.
 /// PODE (E PRECISA) RECEBER ACRESCIMOS, APENAS
 /// NAS PARTES INDICADAS POR /* ACRESCENTAR */
-BigInt::BigInt(long long int N) : neg(N < 0), nDig(N == 0 ? 1 : int(log10(fabs(N))) + 1), d(new int8_t[nDig]{0})
+BigInt::BigInt(long long int N) : BigInt(N < 0, (N == 0 ? 1 : 1 + int(log10(fabs(N)))))
 {
   // Calcula os digitos, usando divisao inteira por 10
   for (int i = 0; i < size(); ++i)
@@ -209,7 +211,13 @@ std::ostream &operator<<(std::ostream &O, const BigInt &B)
     O << '-';
 
   for (int i = B.size() - 1; i >= 0; --i)
-    O << B[i];
+  {
+    int digito = B[i];
+    if (digito >= 0 && digito <= 9)
+      O << digito;
+    else
+      O << '#';
+  }
 
   return O;
 }
@@ -466,10 +474,9 @@ BigInt BigInt::operator-() const
   return prov;
 }
 
-BigInt BigInt::operator+() const
+const BigInt &BigInt::operator+() const
 {
-  BigInt prov = *this;
-  return prov;
+  return *this;
 }
 /// Soma
 /* ACRESCENTAR */
@@ -484,7 +491,7 @@ BigInt BigInt::operator+(const BigInt &B) const
       C.d[i] = (*this)[i] + B[i] + carry;
       if (C.d[i] > 9)
       {
-        C.d[i] = C.d[i] - 10;
+        C.d[i] -= 10;
         carry = 1;
       }
       else
@@ -506,7 +513,7 @@ BigInt BigInt::operator+(const BigInt &B) const
         C.d[i] = (*this)[i] - B[i] - borrow;
         if (C.d[i] < 0)
         {
-          C.d[i] = C.d[i] + 10;
+          C.d[i] += 10;
           borrow = 1;
         }
         else
@@ -548,13 +555,13 @@ BigInt BigInt::operator*(const BigInt &B) const
         if (B.d[j] != 0)
         {
           int k = i + j;
-          C.d[k] = C.d[k] + (d[i] * B.d[j]);
+          C.d[k] += (d[i] * B.d[j]);
           while (C.d[k] > 9)
           {
             int carry = C.d[k] / 10;
-            C.d[k] = C.d[k] % 10;
+            C.d[k] %= 10;
             ++k;
-            C.d[k] = C.d[k] + carry;
+            C.d[k] += carry;
           }
         }
       }
@@ -650,7 +657,7 @@ void BigInt::division(const BigInt &D, BigInt &Q, BigInt &R) const
     while (R >= absD)
     {
       R = R - absD;
-      div = div + 1;
+      ++div;
     }
 
     if (!(Q.isZero()))

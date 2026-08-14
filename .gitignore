@@ -33,3 +33,29 @@ object_script.*.Debug
 Thumbs.db
 *~
 *.swp
+
+# ========================
+# Executáveis / Binários 
+# ========================
+# Ignora executáveis de teste, mas preserva fontes e textos
+teste*
+!teste*.cpp
+!teste*.txt
+
+# Ignora executáveis do Planejador, preservando os códigos
+planejador*
+!planejador*.cpp
+!planejador*.h
+!planejador*.cbp
+
+# Ignora executáveis do Designer, preservando os códigos
+designer*
+!designer*.cpp
+!designer*.h
+!designer*.cbp
+
+# Outros executáveis principais
+calculadora_bigint
+eua_bandeira
+servidor
+cliente_cli

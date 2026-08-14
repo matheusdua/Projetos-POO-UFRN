@@ -3,10 +3,7 @@
 
 #include <iostream>
 #include <string>
-#include <climits>
 #include <cstdint>
-#include <utility>
-#include <cmath>
 
 class BigInt
 {
@@ -56,10 +53,10 @@ public:
     BigInt operator++(int);
     BigInt operator--(int);
 
-    friend BigInt abs(const BigInt &B);
+friend BigInt abs(const BigInt &B);
 
     BigInt operator-() const;
-    BigInt operator+() const;
+    const BigInt& operator+() const; 
 
     BigInt operator+(const BigInt &B) const;
     BigInt operator-(const BigInt &B) const;
