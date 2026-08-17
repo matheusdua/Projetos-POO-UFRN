@@ -470,19 +470,18 @@ double Planejador::calculaCaminho(const IDPonto &id_origem,
         auto itr_rotas = rotas.begin();
         bool rotaExiste = false;
 
+        auto testa_conexao = [&](const Rota &R)
+        { return R.extremidade[0] == atual.id_pt || R.extremidade[1] == atual.id_pt; };
+
         do
         {
-
-          auto testa_conexao = [&](const Rota &R)
-          { return R.extremidade[0] == atual.id_pt || R.extremidade[1] == atual.id_pt; };
-
           itr_rotas = find_if(itr_rotas, rotas.end(), testa_conexao);
 
           rotaExiste = (itr_rotas != rotas.end());
 
           if (rotaExiste)
           {
-            Rota rota_suc = *itr_rotas;
+            Rota &rota_suc = *itr_rotas;
 
             IDPonto id_pt_suc = rota_suc.outraExtremidade(atual.id_pt);
             Noh suc(id_pt_suc, rota_suc.id, atual.g + rota_suc.comprimento, getPonto(id_pt_suc).distancia(pt_destino));
