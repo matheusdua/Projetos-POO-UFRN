@@ -9,13 +9,12 @@
 MainPlotador::MainPlotador(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainPlotador)
+    , lehFuncao(new LehFuncao(this))
+    , grafico(new Grafico(this))
 {
     ui->setupUi(this);
 
-    lehFuncao = new LehFuncao(this);
     connect(lehFuncao, &LehFuncao::signIncluirFuncao, this, &MainPlotador::slotIncluirFuncao);
-
-    grafico = new Grafico(this);
 
     ui->tableFuncoes->setStyleSheet("QHeaderView::section {background-color:lightgray}");
 
@@ -27,13 +26,11 @@ MainPlotador::MainPlotador(QWidget *parent)
     grafico->setLimites(ui->spinMinX->value(), ui->spinMaxX->value(), ui->spinExpX->value(),
                         ui->spinMinY->value(), ui->spinMaxY->value(), ui->spinExpY->value());
 
-
     ui->horizontalLayout->insertWidget(0, grafico);
 
     connect(grafico, &Grafico::signGraficoClicked, this, &MainPlotador::slotGraficoClicked);
 
     desenharGrafico();
-
 }
 
 MainPlotador::~MainPlotador()
