@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <limits>
 /* ACRESCENTAR SE NECESSARIO */
 
 #include "designer.h"
@@ -17,12 +18,12 @@ Designer::Designer(double Width, double Height) : width(Width >= 0.0 ? Width : 0
 
 /// Construtor por copia
 /* ACRESCENTAR */
-Designer::Designer(const Designer &D) : width(D.width), height(D.height), VS()
+Designer::Designer(const Designer &D) : width(D.width), height(D.height), VS(D.VS.size(), nullptr)
 {
   for (size_t i = 0; i < D.VS.size(); ++i)
   {
     if (D.VS.at(i) != nullptr)
-      VS.push_back(D.VS.at(i)->clone());
+      VS[i] = D.VS.at(i)->clone();
   }
 }
 
@@ -49,10 +50,12 @@ Designer &Designer::operator=(const Designer &D)
   width = D.width;
   height = D.height;
 
+  VS.resize(D.VS.size(), nullptr);
+
   for (size_t i = 0; i < D.VS.size(); ++i)
   {
     if (D.VS.at(i) != nullptr)
-      VS.push_back(D.VS.at(i)->clone());
+      VS[i] = D.VS.at(i)->clone();
   }
 
   return *this;
@@ -161,8 +164,7 @@ void Designer::read(const string &fileName)
       shape_Temp = new Triangle();
       break;
     default:
-      string lixo;
-      getline(arq, lixo);
+      arq.ignore(numeric_limits<streamsize>::max(), '\n');
       continue;
     }
 
