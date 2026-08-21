@@ -16,7 +16,7 @@
 					<Add option="-g" />
 				</Compiler>
 				<Linker>
-					<Add library="Ws2_32" />
+					<Add option="-pthread" />
 				</Linker>
 			</Target>
 		</Build>

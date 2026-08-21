@@ -19,7 +19,7 @@
 					<Add option="-static-libstdc++" />
 					<Add option="-static-libgcc" />
 					<Add option="-static" />
-					<Add library="Ws2_32" />
+					<Add option="-pthread" />
 				</Linker>
 			</Target>
 		</Build>

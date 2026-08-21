@@ -1,30 +1,25 @@
 #include "mysocket.h"
+#include <cstring>
 
 /* #############################################################
-   ##  ATENCAO: VOCE DEVE DESCOMENTAR UM DOS BLOCOS ABAIXO    ##
-   ##  PARA PODER COMPILAR NO WINDOWS OU NO LINUX             ##
+   ##  TRATAMENTO MULTIPLATAFORMA AUTOMATICO (WIN / LINUX)    ##
    ############################################################# */
 
-/// Descomente o bloco a seguir para compilar no Windows
+#if defined(_WIN32) || defined(_WIN64)
 
-///*
-
-/// A funcao de inicializacao da biblioteca de sockets
+/// A funcao de inicializacao da biblioteca de sockets (Windows)
 mysocket_status mysocket::init()
 {
-  // All processes that call Winsock functions must first initialize the use of the Windows Sockets DLL (WSAStartup)
-  // before making other Winsock functions calls
-  // The MAKEWORD(2,2) parameter of WSAStartup makes a request for version 2.2 of Winsock on the system
   WSADATA wsaData;
-  int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-  if (iResult==0) return mysocket_status::SOCK_OK;
+  int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (iResult == 0)
+    return mysocket_status::SOCK_OK;
   return mysocket_status::SOCK_ERROR;
 }
 
 /// A funcao de encerramento da biblioteca de sockets
 void mysocket::end()
 {
-  //call WSACleanup when done using the Winsock dll
   WSACleanup();
 }
 
@@ -34,19 +29,9 @@ static void myclosesocket(SOCKET x)
   closesocket(x);
 }
 
-//*/
+#else
 
-/// Descomente o bloco a seguir para compilar no Linux
-
-/*
-
-// Os arquivos de inclusao
-#include <sys/types.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <cstring>
-
-/// A funcao de inicializacao dos sockets
+/// A funcao de inicializacao da biblioteca de sockets (Linux/Unix)
 mysocket_status mysocket::init()
 {
   return mysocket_status::SOCK_OK;
@@ -63,21 +48,21 @@ static void myclosesocket(SOCKET x)
   close(x);
 }
 
-*/
+#endif
 
 /*********************************************
  * A classe base mysocket                    *
  *********************************************/
 
 /// Construtor por movimento
-mysocket::mysocket(mysocket&& S)
+mysocket::mysocket(mysocket &&S)
 {
   id = S.id;
   S.id = INVALID_SOCKET;
 }
 
 /// Operator de atribuicao por movimento
-void mysocket::operator=(mysocket&& S)
+void mysocket::operator=(mysocket &&S)
 {
   close();
   id = S.id;
@@ -96,9 +81,9 @@ void mysocket::close()
 
 /// Permuta dois sockets
 /// Geralmente, deve ser utilizado ao inves do operador de atribuicao
-void mysocket::swap(mysocket& S)
+void mysocket::swap(mysocket &S)
 {
-  std::swap(id,S.id);
+  std::swap(id, S.id);
 }
 
 /// Testa se um socket estah fechado
@@ -128,11 +113,11 @@ bool mysocket::connected() const
 /// Se conecta a um socket aberto
 /// Soh pode ser usado em sockets "virgens" ou explicitamente fechados
 /// Retorna mysocket_status::SOCK_OK, se tudo deu certo, ou mysocket_status::SOCK_ERROR
-mysocket_status tcp_mysocket::connect(const std::string& name, const std::string& port)
+mysocket_status tcp_mysocket::connect(const std::string &name, const std::string &port)
 {
   if (id != INVALID_SOCKET)
   {
-    return(mysocket_status::SOCK_ERROR);
+    return (mysocket_status::SOCK_ERROR);
   }
 
   // The getaddrinfo function is used to determine the values in the sockaddr structure:
@@ -152,10 +137,10 @@ mysocket_status tcp_mysocket::connect(const std::string& name, const std::string
   //     IN6ADDR_ANY_INIT for IPv6 addresses.
   // ppResult: A pointer to a linked list of one or more addrinfo structures that contains response information about the host.
 
-  struct addrinfo hints, *result = nullptr;  // para getaddrinfo, bind
+  struct addrinfo hints, *result = nullptr; // para getaddrinfo, bind
   int intResult;
 
-  memset(&hints, 0, sizeof (hints));
+  memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
@@ -180,7 +165,7 @@ mysocket_status tcp_mysocket::connect(const std::string& name, const std::string
   }
 
   // Connect to server.
-  intResult = ::connect( id, result->ai_addr, (int)result->ai_addrlen);
+  intResult = ::connect(id, result->ai_addr, (int)result->ai_addrlen);
   if (intResult != 0)
   {
     // Should really try the next address returned by getaddrinfo if the connect call failed
@@ -195,7 +180,7 @@ mysocket_status tcp_mysocket::connect(const std::string& name, const std::string
   // The freeaddrinfo function is called to free the memory allocated by the getaddrinfo function for this address information.
   freeaddrinfo(result);
 
-  return(mysocket_status::SOCK_OK);
+  return (mysocket_status::SOCK_OK);
 }
 
 /// Leh de um socket conectado
@@ -208,26 +193,26 @@ mysocket_status tcp_mysocket::connect(const std::string& name, const std::string
 /// - mysocket_status::SOCK_TIMEOUT, se retornou por timeout;
 /// - mysocket_status::SOCK_DISCONNECTED, se a conexao foi fechada corretamente; ou
 /// - mysocket_status::SOCK_ERROR, em caso de erro
-mysocket_status tcp_mysocket::read_bytes(mybyte* buff, int len, long milisec) const
+mysocket_status tcp_mysocket::read_bytes(mybyte *buff, int len, long milisec) const
 {
-  if (!connected() || len<=0)
+  if (!connected() || len <= 0)
   {
-    return(mysocket_status::SOCK_ERROR);
+    return (mysocket_status::SOCK_ERROR);
   }
-  if (milisec>=0)
+  if (milisec >= 0)
   {
     // Com timeout
     mysocket_queue f;
     f.include(*this);
-    mysocket_status iResult=f.wait_read(milisec);
-    if (iResult==mysocket_status::SOCK_ERROR ||
-        iResult==mysocket_status::SOCK_TIMEOUT)
+    mysocket_status iResult = f.wait_read(milisec);
+    if (iResult == mysocket_status::SOCK_ERROR ||
+        iResult == mysocket_status::SOCK_TIMEOUT)
     {
       return iResult;
     }
   }
 
-  int ultima_leitura,recebidos=0,falta_receber=len;
+  int ultima_leitura, recebidos = 0, falta_receber = len;
   do
   {
     // recv: receives data from a connected socket
@@ -236,14 +221,14 @@ mysocket_status tcp_mysocket::read_bytes(mybyte* buff, int len, long milisec) co
     // buf: A pointer to the buffer to receive the incoming data.
     // len: The length, in bytes, of the buffer pointed to by the buf parameter.
     // flags: A set of flags that influences the behavior of this function.
-    ultima_leitura = ::recv(id,(char*)buff,falta_receber,0);
+    ultima_leitura = ::recv(id, (char *)buff, falta_receber, 0);
 
-    if ( ultima_leitura == 0 )
+    if (ultima_leitura == 0)
     {
       // Servidor desconectou
       return mysocket_status::SOCK_DISCONNECTED;
     }
-    if ( ultima_leitura == SOCKET_ERROR )
+    if (ultima_leitura == SOCKET_ERROR)
     {
       // Deu erro
       return mysocket_status::SOCK_ERROR;
@@ -254,10 +239,9 @@ mysocket_status tcp_mysocket::read_bytes(mybyte* buff, int len, long milisec) co
     {
       buff += ultima_leitura;
     }
-  }
-  while (falta_receber>0);
+  } while (falta_receber > 0);
 
-  return(mysocket_status::SOCK_OK);
+  return (mysocket_status::SOCK_OK);
 }
 
 /// Escreve em um socket conectado
@@ -266,18 +250,18 @@ mysocket_status tcp_mysocket::read_bytes(mybyte* buff, int len, long milisec) co
 /// Retorna:
 /// - mysocket_status::SOCK_OK, em caso de sucesso;
 /// - mysocket_status::SOCK_ERROR, em caso de erro
-mysocket_status tcp_mysocket::write_bytes(const mybyte* buff, int len) const
+mysocket_status tcp_mysocket::write_bytes(const mybyte *buff, int len) const
 {
   if (!connected())
   {
-    return(mysocket_status::SOCK_ERROR);
+    return (mysocket_status::SOCK_ERROR);
   }
-  if (len==0)
+  if (len == 0)
   {
-    return(mysocket_status::SOCK_ERROR);
+    return (mysocket_status::SOCK_ERROR);
   }
 
-  int ultimo_envio,enviados=0,falta_enviar=len;
+  int ultimo_envio, enviados = 0, falta_enviar = len;
   do
   {
     // send: sends data on a connected socket
@@ -286,9 +270,9 @@ mysocket_status tcp_mysocket::write_bytes(const mybyte* buff, int len) const
     // buf: A pointer to a buffer containing the data to be transmitted.
     // len: length, in bytes, of the data in buffer pointed to by the buf parameter.
     // flags: A set of flags that specify the way in which the call is made.
-    ultimo_envio = ::send(id, (char*)buff, falta_enviar, 0);
+    ultimo_envio = ::send(id, (char *)buff, falta_enviar, 0);
 
-    if ( ultimo_envio == SOCKET_ERROR )
+    if (ultimo_envio == SOCKET_ERROR)
     {
       return mysocket_status::SOCK_ERROR;
     }
@@ -298,9 +282,8 @@ mysocket_status tcp_mysocket::write_bytes(const mybyte* buff, int len) const
     {
       buff += ultimo_envio;
     }
-  }
-  while (falta_enviar>0);
-  return(mysocket_status::SOCK_OK);
+  } while (falta_enviar > 0);
+  return (mysocket_status::SOCK_OK);
 }
 
 /// Leh um inteiro com sinal (int8_t, int16_t, int32_t, int64_t) ou sem sinal
@@ -312,37 +295,37 @@ mysocket_status tcp_mysocket::write_bytes(const mybyte* buff, int len) const
 /// - mysocket_status::SOCK_TIMEOUT, se retornou por timeout;
 /// - mysocket_status::SOCK_DISCONNECTED, se a conexao foi fechada corretamente; ou
 /// - mysocket_status::SOCK_ERROR, em caso de erro
-mysocket_status tcp_mysocket::read_int8(int8_t& num, long milisec) const
+mysocket_status tcp_mysocket::read_int8(int8_t &num, long milisec) const
 {
-  return read_bytes((mybyte*)&num,sizeof(num),milisec);
+  return read_bytes((mybyte *)&num, sizeof(num), milisec);
 }
-mysocket_status tcp_mysocket::read_int16(int16_t& num, long milisec) const
+mysocket_status tcp_mysocket::read_int16(int16_t &num, long milisec) const
 {
-  return read_bytes((mybyte*)&num,sizeof(num),milisec);
+  return read_bytes((mybyte *)&num, sizeof(num), milisec);
 }
-mysocket_status tcp_mysocket::read_int32(int32_t& num, long milisec) const
+mysocket_status tcp_mysocket::read_int32(int32_t &num, long milisec) const
 {
-  return read_bytes((mybyte*)&num,sizeof(num),milisec);
+  return read_bytes((mybyte *)&num, sizeof(num), milisec);
 }
-mysocket_status tcp_mysocket::read_int64(int64_t& num, long milisec) const
+mysocket_status tcp_mysocket::read_int64(int64_t &num, long milisec) const
 {
-  return read_bytes((mybyte*)&num,sizeof(num),milisec);
+  return read_bytes((mybyte *)&num, sizeof(num), milisec);
 }
-mysocket_status tcp_mysocket::read_uint8(uint8_t& num, long milisec) const
+mysocket_status tcp_mysocket::read_uint8(uint8_t &num, long milisec) const
 {
-  return read_bytes((mybyte*)&num,sizeof(num),milisec);
+  return read_bytes((mybyte *)&num, sizeof(num), milisec);
 }
-mysocket_status tcp_mysocket::read_uint16(uint16_t& num, long milisec) const
+mysocket_status tcp_mysocket::read_uint16(uint16_t &num, long milisec) const
 {
-  return read_bytes((mybyte*)&num,sizeof(num),milisec);
+  return read_bytes((mybyte *)&num, sizeof(num), milisec);
 }
-mysocket_status tcp_mysocket::read_uint32(uint32_t& num, long milisec) const
+mysocket_status tcp_mysocket::read_uint32(uint32_t &num, long milisec) const
 {
-  return read_bytes((mybyte*)&num,sizeof(num),milisec);
+  return read_bytes((mybyte *)&num, sizeof(num), milisec);
 }
-mysocket_status tcp_mysocket::read_uint64(uint64_t& num, long milisec) const
+mysocket_status tcp_mysocket::read_uint64(uint64_t &num, long milisec) const
 {
-  return read_bytes((mybyte*)&num,sizeof(num),milisec);
+  return read_bytes((mybyte *)&num, sizeof(num), milisec);
 }
 
 /// Escreve um inteiro com sinal (int8_t, int16_t, int32_t, int64_t) ou sem sinal
@@ -352,35 +335,35 @@ mysocket_status tcp_mysocket::read_uint64(uint64_t& num, long milisec) const
 /// - mysocket_status::SOCK_ERROR, em caso de erro
 mysocket_status tcp_mysocket::write_int8(const int8_t num) const
 {
-  return write_bytes((mybyte*)&num,sizeof(num));
+  return write_bytes((mybyte *)&num, sizeof(num));
 }
 mysocket_status tcp_mysocket::write_int16(const int16_t num) const
 {
-  return write_bytes((mybyte*)&num,sizeof(num));
+  return write_bytes((mybyte *)&num, sizeof(num));
 }
 mysocket_status tcp_mysocket::write_int32(const int32_t num) const
 {
-  return write_bytes((mybyte*)&num,sizeof(num));
+  return write_bytes((mybyte *)&num, sizeof(num));
 }
 mysocket_status tcp_mysocket::write_int64(const int64_t num) const
 {
-  return write_bytes((mybyte*)&num,sizeof(num));
+  return write_bytes((mybyte *)&num, sizeof(num));
 }
 mysocket_status tcp_mysocket::write_uint8(const uint8_t num) const
 {
-  return write_bytes((mybyte*)&num,sizeof(num));
+  return write_bytes((mybyte *)&num, sizeof(num));
 }
 mysocket_status tcp_mysocket::write_uint16(const uint16_t num) const
 {
-  return write_bytes((mybyte*)&num,sizeof(num));
+  return write_bytes((mybyte *)&num, sizeof(num));
 }
 mysocket_status tcp_mysocket::write_uint32(const uint32_t num) const
 {
-  return write_bytes((mybyte*)&num,sizeof(num));
+  return write_bytes((mybyte *)&num, sizeof(num));
 }
 mysocket_status tcp_mysocket::write_uint64(const uint64_t num) const
 {
-  return write_bytes((mybyte*)&num,sizeof(num));
+  return write_bytes((mybyte *)&num, sizeof(num));
 }
 
 /// Leh uma string de um socket conectado
@@ -392,16 +375,16 @@ mysocket_status tcp_mysocket::write_uint64(const uint64_t num) const
 /// - mysocket_status::SOCK_TIMEOUT, se retornou por timeout;
 /// - mysocket_status::SOCK_DISCONNECTED, se a conexao foi fechada corretamente; ou
 /// - mysocket_status::SOCK_ERROR, em caso de erro
-mysocket_status tcp_mysocket::read_string(std::string& msg, long milisec) const
+mysocket_status tcp_mysocket::read_string(std::string &msg, long milisec) const
 {
   uint16_t len;
   mysocket_status iResult;
 
   // Leh o numero de caracteres da string
-  iResult = read_uint16(len,milisec);
-  if (iResult==mysocket_status::SOCK_ERROR ||
-      iResult==mysocket_status::SOCK_TIMEOUT ||
-      iResult==mysocket_status::SOCK_DISCONNECTED)
+  iResult = read_uint16(len, milisec);
+  if (iResult == mysocket_status::SOCK_ERROR ||
+      iResult == mysocket_status::SOCK_TIMEOUT ||
+      iResult == mysocket_status::SOCK_DISCONNECTED)
   {
     // Erro ou timeout ou desconexao
     msg = "";
@@ -409,12 +392,12 @@ mysocket_status tcp_mysocket::read_string(std::string& msg, long milisec) const
   }
   msg.resize(len);
   // Escreve nos bytes da string
-  char* buffer = (char*)msg.data();
+  char *buffer = (char *)msg.data();
   // Le os caracteres da string
-  iResult = read_bytes((mybyte*)buffer,len,milisec);
-  if (iResult==mysocket_status::SOCK_ERROR ||
-      iResult==mysocket_status::SOCK_TIMEOUT ||
-      iResult==mysocket_status::SOCK_DISCONNECTED)
+  iResult = read_bytes((mybyte *)buffer, len, milisec);
+  if (iResult == mysocket_status::SOCK_ERROR ||
+      iResult == mysocket_status::SOCK_TIMEOUT ||
+      iResult == mysocket_status::SOCK_DISCONNECTED)
   {
     // Erro ou timeout ou desconexao
     msg = "";
@@ -428,7 +411,7 @@ mysocket_status tcp_mysocket::read_string(std::string& msg, long milisec) const
 /// Retorna:
 /// - mysocket_status::SOCK_OK, em caso de sucesso;
 /// - mysocket_status::SOCK_ERROR, em caso de erro
-mysocket_status tcp_mysocket::write_string(const std::string& msg) const
+mysocket_status tcp_mysocket::write_string(const std::string &msg) const
 {
   int16_t len;
   mysocket_status iResult;
@@ -439,8 +422,8 @@ mysocket_status tcp_mysocket::write_string(const std::string& msg) const
   {
     return mysocket_status::SOCK_ERROR;
   }
-  iResult = write_bytes((mybyte*)msg.c_str(),len);
-  if ( iResult == mysocket_status::SOCK_ERROR )
+  iResult = write_bytes((mybyte *)msg.c_str(), len);
+  if (iResult == mysocket_status::SOCK_ERROR)
   {
     return mysocket_status::SOCK_ERROR;
   }
@@ -452,11 +435,11 @@ mysocket_status tcp_mysocket::write_string(const std::string& msg) const
 /// Abre um novo socket para esperar conexoes
 /// Soh pode ser usado em sockets "virgens" ou explicitamente fechados
 /// Retorna mysocket_status::SOCK_OK ou mysocket_status::SOCK_ERROR
-mysocket_status tcp_mysocket_server::listen(const std::string& port, int nconex)
+mysocket_status tcp_mysocket_server::listen(const std::string &port, int nconex)
 {
   if (id != INVALID_SOCKET)
   {
-    return(mysocket_status::SOCK_ERROR);
+    return (mysocket_status::SOCK_ERROR);
   }
 
   // Cria o socket
@@ -478,10 +461,10 @@ mysocket_status tcp_mysocket_server::listen(const std::string& port, int nconex)
   //     IN6ADDR_ANY_INIT for IPv6 addresses.
   // ppResult: A pointer to a linked list of one or more addrinfo structures that contains response information about the host.
 
-  struct addrinfo hints, *result = nullptr;  // para getaddrinfo, bind
+  struct addrinfo hints, *result = nullptr; // para getaddrinfo, bind
   int intResult;
 
-  memset(&hints, 0, sizeof (hints));
+  memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
@@ -509,7 +492,7 @@ mysocket_status tcp_mysocket_server::listen(const std::string& port, int nconex)
   // For a server to accept client connections, it must be bound to a network address within the system.
   // Call the bind function, passing the created socket and sockaddr structure returned from the getaddrinfo function as parameters.
   // Setup the TCP listening socket
-  intResult = bind( id, result->ai_addr, (int)result->ai_addrlen);
+  intResult = bind(id, result->ai_addr, (int)result->ai_addrlen);
   if (intResult == SOCKET_ERROR)
   {
     freeaddrinfo(result);
@@ -528,8 +511,8 @@ mysocket_status tcp_mysocket_server::listen(const std::string& port, int nconex)
   // backlog: The maximum length of the queue of pending connections.
   //   If set to SOMAXCONN, will set the backlog to a maximum reasonable value.
   // the created socket and a value for the maximum length of the queue of pending connections to accept
-  intResult = ::listen( id, nconex );
-  if ( intResult == SOCKET_ERROR )
+  intResult = ::listen(id, nconex);
+  if (intResult == SOCKET_ERROR)
   {
     close();
     return mysocket_status::SOCK_ERROR;
@@ -543,7 +526,7 @@ mysocket_status tcp_mysocket_server::listen(const std::string& port, int nconex)
 /// O socket "a" passado como parametro, em caso de sucesso, estarah conectado
 /// (nao-conectado em caso de erro)
 /// Retorna mysocket_status::SOCK_OK ou mysocket_status::SOCK_ERROR
-mysocket_status tcp_mysocket_server::accept(tcp_mysocket& a) const
+mysocket_status tcp_mysocket_server::accept(tcp_mysocket &a) const
 {
   if (!accepting())
   {
@@ -554,7 +537,7 @@ mysocket_status tcp_mysocket_server::accept(tcp_mysocket& a) const
   a.close();
 
   // Aceita nova conexao
-  a.id = ::accept(id,nullptr,nullptr);
+  a.id = ::accept(id, nullptr, nullptr);
   if (a.id == INVALID_SOCKET)
   {
     return mysocket_status::SOCK_ERROR;
@@ -585,26 +568,26 @@ void mysocket_queue::clear()
 
 /// Adiciona um socket a uma fila de sockets
 /// Retorna mysocket_status::SOCK_OK ou mysocket_status::SOCK_ERROR
-mysocket_status mysocket_queue::include(const mysocket& a)
+mysocket_status mysocket_queue::include(const mysocket &a)
 {
   if (nfds <= a.id)
   {
-    nfds = a.id+1;
+    nfds = a.id + 1;
   }
-  FD_SET(a.id,&set);
-  return(mysocket_status::SOCK_OK);
+  FD_SET(a.id, &set);
+  return (mysocket_status::SOCK_OK);
 }
 
 /// Retira um socket de uma fila de sockets
 /// Retorna mysocket_status::SOCK_OK ou mysocket_status::SOCK_ERROR
-mysocket_status mysocket_queue::exclude(const mysocket& a)
+mysocket_status mysocket_queue::exclude(const mysocket &a)
 {
-  if (FD_ISSET(a.id,&set))
+  if (FD_ISSET(a.id, &set))
   {
-    FD_CLR(a.id,&set);
-    return(mysocket_status::SOCK_OK);
+    FD_CLR(a.id, &set);
+    return (mysocket_status::SOCK_OK);
   }
-  return(mysocket_status::SOCK_ERROR);
+  return (mysocket_status::SOCK_ERROR);
 }
 
 /// Bloqueia ateh haver alguma atividade de leitura em socket da fila
@@ -618,16 +601,18 @@ mysocket_status mysocket_queue::wait_read(long milisec)
   if (milisec >= 0)
   {
     struct timeval t;
-    t.tv_sec = milisec/1000;
-    t.tv_usec = 1000*(milisec - 1000*t.tv_sec);
+    t.tv_sec = milisec / 1000;
+    t.tv_usec = 1000 * (milisec - 1000 * t.tv_sec);
     intResult = ::select(nfds, &set, nullptr, nullptr, &t);
   }
   else
   {
     intResult = ::select(nfds, &set, nullptr, nullptr, nullptr);
   }
-  if (intResult<0) return mysocket_status::SOCK_ERROR;
-  if (intResult==0) return mysocket_status::SOCK_TIMEOUT;
+  if (intResult < 0)
+    return mysocket_status::SOCK_ERROR;
+  if (intResult == 0)
+    return mysocket_status::SOCK_TIMEOUT;
   return mysocket_status::SOCK_OK;
 }
 
@@ -652,21 +637,23 @@ mysocket_status mysocket_queue::wait_write(long milisec)
   if (milisec >= 0)
   {
     struct timeval t;
-    t.tv_sec = milisec/1000;
-    t.tv_usec = 1000*(milisec - 1000*t.tv_sec);
+    t.tv_sec = milisec / 1000;
+    t.tv_usec = 1000 * (milisec - 1000 * t.tv_sec);
     intResult = ::select(nfds, nullptr, &set, nullptr, &t);
   }
   else
   {
     intResult = ::select(nfds, nullptr, &set, nullptr, nullptr);
   }
-  if (intResult<0) return mysocket_status::SOCK_ERROR;
-  if (intResult==0) return mysocket_status::SOCK_TIMEOUT;
+  if (intResult < 0)
+    return mysocket_status::SOCK_ERROR;
+  if (intResult == 0)
+    return mysocket_status::SOCK_TIMEOUT;
   return mysocket_status::SOCK_OK;
 }
 
 // Testa se houve atividade em um socket especifico da fila
-bool mysocket_queue::had_activity(const mysocket& a)
+bool mysocket_queue::had_activity(const mysocket &a)
 {
-  return(FD_ISSET(a.id,&set));
+  return (FD_ISSET(a.id, &set));
 }

@@ -11,12 +11,10 @@ using namespace std;
 
 /// Construtor
 SupServidor::SupServidor()
-    : Tanks()
-    , server_on(false)
-    , LU()
+    : Tanks(), server_on(false), LU()
       /*ACRESCENTAR*/
-      , thr_server()
-      , sock_server()
+      ,
+      thr_server(), sock_server()
 {
   // Inicializa a biblioteca de sockets
   /*ACRESCENTAR*/
@@ -289,6 +287,10 @@ void SupServidor::thr_server_main(void)
       case mysocket_status::SOCK_ERROR:
         // Erro no select: encerra o servidor
         throw "erro no select da fila";
+        break;
+
+      // CORREÇÃO: Satisfazendo o compilador para tratar todos os itens do enum
+      case mysocket_status::SOCK_DISCONNECTED:
         break;
 
       // SOCK_OK:

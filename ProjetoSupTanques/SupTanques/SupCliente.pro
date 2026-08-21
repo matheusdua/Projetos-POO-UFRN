@@ -30,8 +30,7 @@ FORMS += \
     supcliente_qt.ui \
     suplogin.ui
 
- LIBS   += \
-    -lWs2_32
+win32: LIBS += -lws2_32
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
